@@ -330,15 +330,29 @@ func runCLIWithInput(svc *Service, args []string, stdin io.Reader, stdout, stder
 
 	case "list":
 		limit := 10
-		if len(args) >= 2 {
-			n, err := strconv.Atoi(strings.TrimSpace(args[1]))
-			if err != nil || n <= 0 {
-				fmt.Fprintln(stderr, "usage: flint list [positive-limit]")
-				return 1
+		allProjects := false
+		i := 1
+		for ; i < len(args); i++ {
+			a := args[i]
+			if strings.HasPrefix(a, "--") {
+				key, _, _ := strings.Cut(strings.TrimPrefix(a, "--"), "=")
+				switch key {
+				case "all-projects":
+					allProjects = true
+				default:
+					fmt.Fprintf(stderr, "unknown flag --%s\n", key)
+					return 1
+				}
+			} else {
+				n, err := strconv.Atoi(strings.TrimSpace(a))
+				if err != nil || n <= 0 {
+					fmt.Fprintln(stderr, "usage: flint list [positive-limit] [--all-projects]")
+					return 1
+				}
+				limit = n
 			}
-			limit = n
 		}
-		items, err := svc.List(limit)
+		items, err := svc.ListOpts(limit, allProjects)
 		if err != nil {
 			fmt.Fprintf(stderr, "list failed: %v\n", err)
 			return 1
