@@ -779,7 +779,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  flint save \"note\"")
 	fmt.Fprintln(w, "  flint recall [--type=...] [--since=YYYY-MM-DD] [--until=YYYY-MM-DD] \"query\"")
 	fmt.Fprintln(w, "  flint context [--n=10] [--scope=...]")
-	fmt.Fprintln(w, "  flint list [limit]")
+	fmt.Fprintln(w, "  flint list [limit] [--all-projects]")
 	fmt.Fprintln(w, "  flint get <id>")
 	fmt.Fprintln(w, "  flint update <id> \"new content\"")
 	fmt.Fprintln(w, "  flint delete <id>")
