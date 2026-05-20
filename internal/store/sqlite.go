@@ -955,6 +955,10 @@ func appendMetadataFilters(clauses []string, args []any, opts model.RecallOption
 		clauses = append(clauses, "COALESCE(type, '') = ?")
 		args = append(args, t)
 	}
+	if tk := strings.TrimSpace(opts.TopicKey); tk != "" {
+		clauses = append(clauses, "COALESCE(topic_key, '') = ?")
+		args = append(args, tk)
+	}
 	if !opts.Since.IsZero() {
 		clauses = append(clauses, "datetime(created_at) >= datetime(?)")
 		args = append(args, opts.Since.UTC().Format(time.RFC3339))

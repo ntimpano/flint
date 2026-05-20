@@ -440,6 +440,9 @@ func runCLIWithInput(svc *Service, args []string, stdin io.Reader, stdout, stder
 	case "session":
 		return runSession(svc, args[1:], stdout, stderr)
 
+	case "recovery":
+		return runRecovery(svc, args[1:], stdout, stderr)
+
 	case "behavior":
 		return runBehavior(svc, args[1:], stdout, stderr)
 
@@ -773,6 +776,84 @@ func runSession(svc *Service, args []string, stdout, stderr io.Writer) int {
 	}
 }
 
+const compactionRecoveryTopicKey = "session/compaction-recovery"
+
+func runRecovery(svc *Service, args []string, stdout, stderr io.Writer) int {
+	if len(args) < 1 {
+		fmt.Fprintln(stderr, "usage: flint recovery <save|get|clear>")
+		return 1
+	}
+
+	switch args[0] {
+	case "save":
+		if len(args) < 3 || strings.TrimSpace(args[1]) != "--summary" {
+			fmt.Fprintln(stderr, "usage: flint recovery save --summary \"...\"")
+			return 1
+		}
+		summary := strings.TrimSpace(strings.Join(args[2:], " "))
+		if summary == "" {
+			fmt.Fprintln(stderr, "summary cannot be empty")
+			return 1
+		}
+		id, err := svc.SaveWithMeta(SaveRequest{
+			Content:  summary,
+			Type:     "recovery",
+			TopicKey: compactionRecoveryTopicKey,
+		})
+		if err != nil {
+			fmt.Fprintf(stderr, "recovery save failed: %v\n", err)
+			return 1
+		}
+		fmt.Fprintf(stdout, "recovery saved #%d\n", id)
+		return 0
+
+	case "get":
+		items, err := svc.RecallWithOptions(RecallOptions{
+			TopicKey: compactionRecoveryTopicKey,
+			Limit:    1,
+		})
+		if err != nil {
+			fmt.Fprintf(stderr, "recovery get failed: %v\n", err)
+			return 1
+		}
+		if len(items) == 0 {
+			fmt.Fprintln(stdout, "no recovery note")
+			return 0
+		}
+		fmt.Fprintln(stdout, FormatNote(items[0]))
+		return 0
+
+	case "clear":
+		items, err := svc.RecallWithOptions(RecallOptions{
+			TopicKey: compactionRecoveryTopicKey,
+			Limit:    1,
+		})
+		if err != nil {
+			fmt.Fprintf(stderr, "recovery clear failed: %v\n", err)
+			return 1
+		}
+		if len(items) == 0 {
+			fmt.Fprintln(stdout, "no recovery note")
+			return 0
+		}
+		deleted, err := svc.Delete(items[0].ID)
+		if err != nil {
+			fmt.Fprintf(stderr, "recovery clear failed: %v\n", err)
+			return 1
+		}
+		if !deleted {
+			fmt.Fprintln(stdout, "no recovery note")
+			return 0
+		}
+		fmt.Fprintln(stdout, "recovery cleared")
+		return 0
+
+	default:
+		fmt.Fprintf(stderr, "unknown recovery subcommand %q (expected save|get|clear)\n", args[0])
+		return 1
+	}
+}
+
 func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "flint commands:")
 	fmt.Fprintln(w, "  flint init  Initialize flint: configure runtime, AI model, domain, and persona")
@@ -784,6 +865,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  flint update <id> \"new content\"")
 	fmt.Fprintln(w, "  flint delete <id>")
 	fmt.Fprintln(w, "  flint session <start|end|summary> [id] [text]")
+	fmt.Fprintln(w, "  flint recovery <save|get|clear>")
 	fmt.Fprintln(w, "  flint behavior <list|show|dismiss|preview>")
 	fmt.Fprintln(w, "  flint import [--dry-run] <file.json>")
 	fmt.Fprintln(w, "  flint backup <path>")

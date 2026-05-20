@@ -298,7 +298,8 @@ func (s *Service) Recall(query string, limit int) ([]model.MemoryItem, error) {
 // unfiltered rows.
 func (s *Service) RecallWithOptions(opts model.RecallOptions) ([]model.MemoryItem, error) {
 	clean := strings.TrimSpace(opts.Query)
-	if clean == "" {
+	hasTopicKey := strings.TrimSpace(opts.TopicKey) != ""
+	if clean == "" && !hasTopicKey {
 		return nil, errors.New("query is empty")
 	}
 	opts.Query = clean

@@ -59,6 +59,8 @@ type RecallOptions struct {
 	Since time.Time
 	Until time.Time
 	Limit int
+	// TopicKey filters recall rows by exact topic_key when non-empty.
+	TopicKey string
 
 	// ProjectID scopes the recall to a specific project. 0 = no filter.
 	ProjectID int64

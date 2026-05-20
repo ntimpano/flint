@@ -113,6 +113,12 @@ type localSessionArgs struct {
 	Summary   string `json:"summary,omitempty"`
 }
 
+type localRecoverySaveArgs struct {
+	Summary string `json:"summary"`
+}
+
+const compactionRecoveryTopicKey = "session/compaction-recovery"
+
 type localRecordObservationArgs struct {
 	Marker string `json:"marker"`
 }
@@ -609,6 +615,55 @@ func handleRequest(payload []byte, svc *app.Service) (response, bool) {
 			}
 			return response{JSONRPC: "2.0", ID: req.ID, Result: toolText(fmt.Sprintf("session summary %s", strings.TrimSpace(args.SessionID)))}, true
 
+		case "local_recovery_save":
+			var args localRecoverySaveArgs
+			if err := json.Unmarshal(params.Arguments, &args); err != nil {
+				return response{JSONRPC: "2.0", ID: req.ID, Error: &rpcError{Code: -32602, Message: "invalid arguments"}}, true
+			}
+			id, err := svc.SaveWithMeta(model.SaveRequest{
+				Content:  strings.TrimSpace(args.Summary),
+				Type:     "recovery",
+				TopicKey: compactionRecoveryTopicKey,
+			})
+			if err != nil {
+				return response{JSONRPC: "2.0", ID: req.ID, Result: toolError(err.Error())}, true
+			}
+			return response{JSONRPC: "2.0", ID: req.ID, Result: toolText(fmt.Sprintf("recovery saved #%d", id))}, true
+
+		case "local_recovery_get":
+			items, err := svc.RecallWithOptions(model.RecallOptions{
+				TopicKey: compactionRecoveryTopicKey,
+				Limit:    1,
+			})
+			if err != nil {
+				return response{JSONRPC: "2.0", ID: req.ID, Result: toolError(err.Error())}, true
+			}
+			if len(items) == 0 {
+				return response{JSONRPC: "2.0", ID: req.ID, Result: toolText("null")}, true
+			}
+			b, _ := json.Marshal(memoryItemPayload(items[0]))
+			return response{JSONRPC: "2.0", ID: req.ID, Result: toolText(string(b))}, true
+
+		case "local_recovery_clear":
+			items, err := svc.RecallWithOptions(model.RecallOptions{
+				TopicKey: compactionRecoveryTopicKey,
+				Limit:    1,
+			})
+			if err != nil {
+				return response{JSONRPC: "2.0", ID: req.ID, Result: toolError(err.Error())}, true
+			}
+			if len(items) == 0 {
+				return response{JSONRPC: "2.0", ID: req.ID, Result: toolText("no recovery note")}, true
+			}
+			deleted, err := svc.Delete(items[0].ID)
+			if err != nil {
+				return response{JSONRPC: "2.0", ID: req.ID, Result: toolError(err.Error())}, true
+			}
+			if !deleted {
+				return response{JSONRPC: "2.0", ID: req.ID, Result: toolText("no recovery note")}, true
+			}
+			return response{JSONRPC: "2.0", ID: req.ID, Result: toolText("recovery cleared")}, true
+
 		case "local_record_observation":
 			var args localRecordObservationArgs
 			if err := json.Unmarshal(params.Arguments, &args); err != nil {
@@ -1078,6 +1133,33 @@ func toolsListResult() map[string]interface{} {
 						"summary":    map[string]interface{}{"type": "string"},
 					},
 					"required": []string{"session_id", "summary"},
+				},
+			},
+			{
+				"name":        "local_recovery_save",
+				"description": "Guarda una nota de recovery de compaction (topic_key=session/compaction-recovery).",
+				"inputSchema": map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"summary": map[string]interface{}{"type": "string"},
+					},
+					"required": []string{"summary"},
+				},
+			},
+			{
+				"name":        "local_recovery_get",
+				"description": "Devuelve la última nota de recovery de compaction (topic_key=session/compaction-recovery).",
+				"inputSchema": map[string]interface{}{
+					"type":       "object",
+					"properties": map[string]interface{}{},
+				},
+			},
+			{
+				"name":        "local_recovery_clear",
+				"description": "Elimina la última nota de recovery de compaction (topic_key=session/compaction-recovery).",
+				"inputSchema": map[string]interface{}{
+					"type":       "object",
+					"properties": map[string]interface{}{},
 				},
 			},
 			{
