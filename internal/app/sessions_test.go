@@ -73,7 +73,7 @@ func (e stubErr) Error() string { return string(e) }
 // and forwards a non-zero timestamp (using its own clock) to the store.
 func TestService_SessionStart_TrimAndForward(t *testing.T) {
 	fake := &sessionFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	if err := svc.SessionStart("  sess-1  "); err != nil {
 		t.Fatalf("SessionStart: %v", err)
@@ -92,7 +92,7 @@ func TestService_SessionStart_TrimAndForward(t *testing.T) {
 // TestService_SessionEnd_TrimAndForward parallels SessionStart.
 func TestService_SessionEnd_TrimAndForward(t *testing.T) {
 	fake := &sessionFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	if err := svc.SessionEnd("sess-2"); err != nil {
 		t.Fatalf("SessionEnd: %v", err)
@@ -106,7 +106,7 @@ func TestService_SessionEnd_TrimAndForward(t *testing.T) {
 // shouldn't accept empty summaries — they would make the row useless.
 func TestService_SessionSummary_RejectsEmptySummary(t *testing.T) {
 	fake := &sessionFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	if err := svc.SessionSummary("sess-3", "   "); err == nil {
 		t.Fatalf("expected error on empty summary")
@@ -120,7 +120,7 @@ func TestService_SessionSummary_RejectsEmptySummary(t *testing.T) {
 // reaches the store verbatim.
 func TestService_SessionSummary_ForwardsContent(t *testing.T) {
 	fake := &sessionFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	if err := svc.SessionSummary("sess-3", "  closed deal  "); err != nil {
 		t.Fatalf("SessionSummary: %v", err)
@@ -136,7 +136,7 @@ func TestService_SessionStart_RejectsEmptyID(t *testing.T) {
 	for _, id := range cases {
 		t.Run(id, func(t *testing.T) {
 			fake := &sessionFakeStore{}
-			svc := NewService(fake)
+			svc := NewService(fake, nil)
 			if err := svc.SessionStart(id); err == nil {
 				t.Fatalf("expected error for id=%q", id)
 			}
@@ -152,7 +152,7 @@ func TestService_SessionStart_RejectsEmptyID(t *testing.T) {
 // clear error rather than a silent no-op.
 func TestService_Session_StoreWithoutSessionCapability(t *testing.T) {
 	fake := &fakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	if err := svc.SessionStart("x"); err == nil {
 		t.Fatalf("expected capability error from SessionStart")

@@ -43,7 +43,7 @@ var _ app.DoctorStore = (*doctorMemStoreMCP)(nil)
 // summary verbatim, so MCP clients see every diagnostic axis.
 func TestMCP_LocalDoctor_DispatchHealthy(t *testing.T) {
 	store := newDoctorMemStoreMCP()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	result, rpcErr := callTool(t, svc, "local_doctor", map[string]interface{}{})
 	if rpcErr != nil {
 		t.Fatalf("rpc error: %+v", rpcErr)

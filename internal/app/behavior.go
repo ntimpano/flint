@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strconv"
 	"strings"
+
+	_ "modernc.org/sqlite"
 )
 
 func parseObservationMarker(marker string) (category, field, value string, confidence int, err error) {
@@ -58,8 +61,27 @@ func parseObservationMarker(marker string) (category, field, value string, confi
 
 func runBehavior(svc *Service, args []string, stdout, stderr io.Writer) int {
 	if len(args) < 1 {
-		fmt.Fprintln(stderr, "usage: nt-cli behavior <list|show|dismiss|preview>")
+		fmt.Fprintln(stderr, "usage: nt-cli behavior <list|show|dismiss|preview|migrate>")
 		return 1
+	}
+	if args[0] == "migrate" {
+		if len(args) != 1 {
+			fmt.Fprintln(stderr, "usage: nt-cli behavior migrate")
+			return 1
+		}
+		flintDBPath, err := DefaultDBPath()
+		if err != nil {
+			fmt.Fprintf(stderr, "behavior migration: warning: %v\n", err)
+			return 0
+		}
+		behaviorDBPath := filepath.Join(filepath.Dir(flintDBPath), "behavior.db")
+		n, err := migrateBehaviorRows(flintDBPath, behaviorDBPath)
+		if err != nil {
+			fmt.Fprintf(stderr, "behavior migration: warning: %v\n", err)
+			return 0
+		}
+		fmt.Fprintf(stdout, "migrated %d behavioral observations\n", n)
+		return 0
 	}
 	bs := svc.BehavioralStore()
 	if bs == nil {
@@ -154,7 +176,127 @@ func runBehavior(svc *Service, args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, "<!-- /nt-cli:behavioral-candidates -->")
 		return 0
 	default:
-		fmt.Fprintf(stderr, "unknown behavior subcommand %q (expected list|show|dismiss|preview)\n", args[0])
+		fmt.Fprintf(stderr, "unknown behavior subcommand %q (expected list|show|dismiss|preview|migrate)\n", args[0])
 		return 1
 	}
+}
+
+func migrateBehaviorRows(sourceDBPath, targetDBPath string) (int, error) {
+	target, err := sql.Open("sqlite", targetDBPath)
+	if err != nil {
+		return 0, err
+	}
+	defer target.Close()
+	if err := ensureBehaviorTable(target); err != nil {
+		return 0, err
+	}
+	var targetCount int
+	if err := target.QueryRow(`SELECT COUNT(1) FROM behavioral_observations`).Scan(&targetCount); err != nil {
+		return 0, err
+	}
+	if targetCount > 0 {
+		return 0, nil
+	}
+
+	source, err := sql.Open("sqlite", sourceDBPath)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	var exists int
+	if err := source.QueryRow(`
+		SELECT 1
+		FROM sqlite_master
+		WHERE type = 'table' AND name = 'behavioral_observations'
+		LIMIT 1`).Scan(&exists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	rows, err := source.Query(`
+		SELECT id, category, field, value, confidence, occurrence_count, status, last_seen, created_at
+		FROM behavioral_observations
+		ORDER BY id ASC`)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	tx, err := target.Begin()
+	if err != nil {
+		return 0, err
+	}
+	committed := false
+	defer func() {
+		if committed {
+			return
+		}
+		_ = tx.Rollback()
+	}()
+
+	insertStmt, err := tx.Prepare(`
+		INSERT INTO behavioral_observations
+			(id, category, field, value, confidence, occurrence_count, status, last_seen, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		return 0, err
+	}
+	defer insertStmt.Close()
+
+	migrated := 0
+	for rows.Next() {
+		var (
+			id              int64
+			category        string
+			field           string
+			value           string
+			confidence      int
+			occurrenceCount int
+			status          string
+			lastSeen        string
+			createdAt       string
+		)
+		if err := rows.Scan(&id, &category, &field, &value, &confidence, &occurrenceCount, &status, &lastSeen, &createdAt); err != nil {
+			return 0, err
+		}
+		if _, err := insertStmt.Exec(id, category, field, value, confidence, occurrenceCount, status, lastSeen, createdAt); err != nil {
+			return 0, err
+		}
+		migrated++
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	committed = true
+	return migrated, nil
+}
+
+func ensureBehaviorTable(db *sql.DB) error {
+	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS behavioral_observations (
+			id               INTEGER PRIMARY KEY AUTOINCREMENT,
+			category         TEXT    NOT NULL,
+			field            TEXT    NOT NULL,
+			value            TEXT    NOT NULL,
+			confidence       INTEGER NOT NULL CHECK (confidence BETWEEN 0 AND 100),
+			occurrence_count INTEGER NOT NULL DEFAULT 1,
+			status           TEXT    NOT NULL DEFAULT 'observed'
+			                 CHECK (status IN ('observed','candidate','dismissed')),
+			last_seen        DATETIME NOT NULL,
+			created_at       DATETIME NOT NULL
+		);
+	`); err != nil {
+		return err
+	}
+	_, err := db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_behavioral_obs_unique
+			ON behavioral_observations(category, field, value)
+	`)
+	return err
 }

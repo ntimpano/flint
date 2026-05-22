@@ -1,12 +1,25 @@
 package store
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 )
 
+func newBehaviorTestStore(t *testing.T) *BehaviorSQLiteStore {
+	t.Helper()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "behavior.db")
+	s, err := NewBehaviorSQLiteStore(path)
+	if err != nil {
+		t.Fatalf("open behavior store: %v", err)
+	}
+	return s
+}
+
 func TestBehavioralStore_RecordInsertAndUpsertPromotion(t *testing.T) {
-	s := newTestStore(t)
+	s := newBehaviorTestStore(t)
+	defer func() { _ = s.Close() }()
 	now := time.Date(2026, 5, 7, 10, 0, 0, 0, time.UTC)
 
 	id, err := s.RecordObservation("tone", "language", "es", 90, now)
@@ -40,7 +53,8 @@ func TestBehavioralStore_RecordInsertAndUpsertPromotion(t *testing.T) {
 }
 
 func TestBehavioralStore_NoPromotionAtLowConfidence(t *testing.T) {
-	s := newTestStore(t)
+	s := newBehaviorTestStore(t)
+	defer func() { _ = s.Close() }()
 	now := time.Date(2026, 5, 7, 10, 0, 0, 0, time.UTC)
 
 	id, err := s.RecordObservation("format", "response_length", "short", 60, now)
@@ -65,7 +79,8 @@ func TestBehavioralStore_NoPromotionAtLowConfidence(t *testing.T) {
 }
 
 func TestBehavioralStore_DismissIdempotentAndFilters(t *testing.T) {
-	s := newTestStore(t)
+	s := newBehaviorTestStore(t)
+	defer func() { _ = s.Close() }()
 	now := time.Date(2026, 5, 7, 10, 0, 0, 0, time.UTC)
 
 	observedID, _ := s.RecordObservation("process", "ask_before_mutation", "true", 80, now)

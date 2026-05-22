@@ -64,7 +64,7 @@ func TestRecallWithOptions_Validation(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fake := &filterFakeStore{}
-			svc := NewService(fake)
+			svc := NewService(fake, nil)
 			_, err := svc.RecallWithOptions(RecallOptions{Query: tc.query})
 			if err == nil {
 				t.Fatalf("expected validation error, got nil")
@@ -83,7 +83,7 @@ func TestRecallWithOptions_DefaultsAndForwardsFilters(t *testing.T) {
 	fake := &filterFakeStore{
 		recallFilteredResult: []MemoryItem{{ID: 1, Content: "alpha", Type: "decision"}},
 	}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	since := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	until := time.Date(2024, 1, 31, 0, 0, 0, 0, time.UTC)
@@ -123,7 +123,7 @@ func TestRecallWithOptions_DefaultsAndForwardsFilters(t *testing.T) {
 // check for MetadataStore.
 func TestRecallWithOptions_StoreWithoutFilterCapability(t *testing.T) {
 	fake := &fakeStore{} // no RecallFiltered/Context
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	_, err := svc.RecallWithOptions(RecallOptions{Query: "alpha", Type: "decision"})
 	if err == nil {
@@ -141,7 +141,7 @@ func TestContext_ValidationAndDefaults(t *testing.T) {
 	fake := &filterFakeStore{
 		contextResult: []MemoryItem{{ID: 1, Content: "x"}},
 	}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	got, err := svc.Context(0, "  project  ")
 	if err != nil {
@@ -165,7 +165,7 @@ func TestContext_ValidationAndDefaults(t *testing.T) {
 // RecallWithOptions when the underlying store is a legacy fake.
 func TestContext_StoreWithoutContextCapability(t *testing.T) {
 	fake := &fakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	_, err := svc.Context(5, "")
 	if err == nil {
@@ -175,7 +175,7 @@ func TestContext_StoreWithoutContextCapability(t *testing.T) {
 
 func TestServiceList_DefaultScopesByActiveProject(t *testing.T) {
 	fake := &filterFakeStore{listFilteredResult: []MemoryItem{{ID: 2, Content: "scoped"}}}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 	svc.SetActiveProject(7)
 
 	items, err := svc.List(3)
@@ -195,7 +195,7 @@ func TestServiceList_DefaultScopesByActiveProject(t *testing.T) {
 
 func TestServiceListOpts_AllProjectsBypass(t *testing.T) {
 	fake := &filterFakeStore{listFilteredResult: []MemoryItem{{ID: 1}, {ID: 2}}}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 	svc.SetActiveProject(9)
 
 	items, err := svc.ListOpts(10, true)

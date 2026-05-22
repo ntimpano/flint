@@ -48,7 +48,7 @@ func TestSSEHandshake_EmitsEndpointEvent(t *testing.T) {
 
 func TestSSEMessage_PostReturnsJSONRPCResponse(t *testing.T) {
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	srv := &Server{svc: svc}
 
 	httpSrv := httptest.NewServer(http.HandlerFunc(srv.handleMessage))
@@ -114,7 +114,7 @@ func TestRunSSEBindFailure(t *testing.T) {
 
 func TestSSEToolParityWithStdioToolsList(t *testing.T) {
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	stdioReq, err := json.Marshal(request{JSONRPC: "2.0", ID: json.RawMessage(`1`), Method: "tools/list"})
 	if err != nil {

@@ -39,7 +39,7 @@ var _ app.BackupStore = (*backupMemStoreMCP)(nil)
 
 func TestMCP_LocalBackup_Dispatches(t *testing.T) {
 	store := newBackupMemStoreMCP()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	result, rpcErr := callTool(t, svc, "local_backup", map[string]interface{}{
 		"path": "/tmp/snap.db",
 	})
@@ -57,7 +57,7 @@ func TestMCP_LocalBackup_Dispatches(t *testing.T) {
 
 func TestMCP_LocalRestore_Dispatches(t *testing.T) {
 	store := newBackupMemStoreMCP()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	result, rpcErr := callTool(t, svc, "local_restore", map[string]interface{}{
 		"path": "/tmp/in.db",
 	})
@@ -87,7 +87,7 @@ func TestMCP_LocalBackupRestore_ValidationErrors(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := newBackupMemStoreMCP()
-			svc := app.NewService(store)
+			svc := app.NewService(store, nil)
 			result, rpcErr := callTool(t, svc, tc.tool, tc.args)
 			if rpcErr != nil {
 				t.Fatalf("expected tool error, got rpc error: %+v", rpcErr)

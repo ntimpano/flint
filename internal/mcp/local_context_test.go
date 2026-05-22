@@ -119,7 +119,7 @@ func TestToolsList_IncludesLocalContext(t *testing.T) {
 // exactly N items newest-first.
 func TestLocalContext_ReturnsRecentN(t *testing.T) {
 	store := newFilterMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	base := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
 	for i := 0; i < 6; i++ {
@@ -159,7 +159,7 @@ func TestLocalContext_ReturnsRecentN(t *testing.T) {
 // TestLocalContext_ScopeFilter narrows by scope.
 func TestLocalContext_ScopeFilter(t *testing.T) {
 	store := newFilterMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	base := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
 	pairs := []struct{ scope, content string }{
 		{"project", "p1"}, {"personal", "x1"},
@@ -198,7 +198,7 @@ func TestLocalContext_ScopeFilter(t *testing.T) {
 // accepts a `type` filter argument and narrows by metadata.
 func TestLocalRecall_TypeFilterNarrows(t *testing.T) {
 	store := newFilterMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	base := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
 
 	if _, err := store.SaveWithMeta(app.SaveRequest{

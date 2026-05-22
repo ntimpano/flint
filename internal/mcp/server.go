@@ -1567,11 +1567,21 @@ func (s *Server) ensureService() (*app.Service, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	svc := app.NewService(repo)
+	behaviorDBPath := filepath.Join(filepath.Dir(dbPath), "behavior.db")
+	behaviorRepo, err := store.NewBehaviorSQLiteStore(behaviorDBPath)
+	if err != nil {
+		_ = repo.Close()
+		return nil, nil, err
+	}
+	svc := app.NewService(repo, behaviorRepo)
 	if err := svc.Init(); err != nil {
+		_ = behaviorRepo.Close()
 		repo.Close()
 		return nil, nil, err
 	}
 	s.svc = svc
-	return svc, func() { _ = repo.Close() }, nil
+	return svc, func() {
+		_ = behaviorRepo.Close()
+		_ = repo.Close()
+	}, nil
 }

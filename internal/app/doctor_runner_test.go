@@ -44,7 +44,7 @@ func TestRunner_Doctor_PrintsSummary(t *testing.T) {
 		SessionsCount:    2,
 		Summary:          "schema_version=3  fts=healthy  integrity=ok  memory_items=7  sessions=2",
 	}
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLI(svc, []string{"doctor"}, &stdout, &stderr)
 	if code != 0 {
@@ -58,7 +58,7 @@ func TestRunner_Doctor_PrintsSummary(t *testing.T) {
 func TestRunner_Doctor_PropagatesError(t *testing.T) {
 	store := newDoctorRunnerStore()
 	store.err = errors.New("integrity failed")
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLI(svc, []string{"doctor"}, &stdout, &stderr)
 	if code == 0 {
@@ -73,7 +73,7 @@ func TestRunner_Doctor_PropagatesError(t *testing.T) {
 // MUST surface a usage error so users don't silently ignore typos like
 // `nt-cli doctor --json`.
 func TestRunner_Doctor_NoArgs(t *testing.T) {
-	svc := app.NewService(newDoctorRunnerStore())
+	svc := app.NewService(newDoctorRunnerStore(), nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLI(svc, []string{"doctor", "extra"}, &stdout, &stderr)
 	if code == 0 {

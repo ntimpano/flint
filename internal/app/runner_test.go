@@ -2,7 +2,9 @@ package app_test
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +12,8 @@ import (
 	"time"
 
 	"flint/internal/app"
+
+	_ "modernc.org/sqlite"
 )
 
 // memStore is an in-memory Store used to drive the CLI runner under test
@@ -197,7 +201,7 @@ func (m *memStore) Candidates() ([]app.BehavioralObservation, error) {
 
 func runCLI(t *testing.T, store *memStore, args ...string) (int, string, string) {
 	t.Helper()
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLI(svc, args, &stdout, &stderr)
 	return code, stdout.String(), stderr.String()
@@ -408,7 +412,7 @@ func TestRunCLI_InitUsesProfileFallbackFlag(t *testing.T) {
 	t.Setenv("HOME", home)
 
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLIWithStdin(svc, []string{"init", "--profile", "--non-interactive", "--primary-domain=research"}, strings.NewReader(""), &stdout, &stderr)
 	if code != 0 {
@@ -428,7 +432,7 @@ func TestRunCLI_InitUsesLegacyFallbackFlag(t *testing.T) {
 	t.Setenv("HOME", home)
 
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLIWithStdin(svc, []string{"init", "--legacy", "--non-interactive", "--primary-domain=strategy"}, strings.NewReader(""), &stdout, &stderr)
 	if code != 0 {
@@ -448,7 +452,7 @@ func TestRunCLI_InitDefaultRoutesToRunInit(t *testing.T) {
 	}
 
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLIWithStdin(svc, []string{"init", "--non-interactive", "--force"}, strings.NewReader(""), &stdout, &stderr)
 	if code != 0 {
@@ -582,6 +586,157 @@ func TestRunCLI_BehaviorPreviewNoCandidates(t *testing.T) {
 	if !strings.Contains(out, "No candidates to preview") {
 		t.Fatalf("expected empty preview message, got %q", out)
 	}
+}
+
+func TestRunCLI_BehaviorMigrate_CopiesRowsAndThenSkipsWhenTargetNonEmpty(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	flintDir := filepath.Join(home, ".flint")
+	if err := os.MkdirAll(flintDir, 0o755); err != nil {
+		t.Fatalf("mkdir ~/.flint: %v", err)
+	}
+
+	seedSourceBehaviorTable(t, filepath.Join(flintDir, "flint.db"), 2)
+	seedTargetBehaviorTable(t, filepath.Join(flintDir, "behavior.db"), 0)
+
+	store := newMemStore()
+	code, out, errOut := runCLI(t, store, "behavior", "migrate")
+	if code != 0 {
+		t.Fatalf("expected zero exit for migrate success, got %d stderr=%q", code, errOut)
+	}
+	if errOut != "" {
+		t.Fatalf("expected empty stderr on success, got %q", errOut)
+	}
+	if !strings.Contains(out, "migrated 2 behavioral observations") {
+		t.Fatalf("expected migrated count in stdout, got %q", out)
+	}
+	if got := behaviorRowCount(t, filepath.Join(flintDir, "behavior.db")); got != 2 {
+		t.Fatalf("expected target row count=2 after first migrate, got %d", got)
+	}
+
+	code, out, errOut = runCLI(t, store, "behavior", "migrate")
+	if code != 0 {
+		t.Fatalf("expected zero exit for idempotent migrate, got %d stderr=%q", code, errOut)
+	}
+	if !strings.Contains(out, "migrated 0 behavioral observations") {
+		t.Fatalf("expected zero migrated rows on second run, got %q", out)
+	}
+	if got := behaviorRowCount(t, filepath.Join(flintDir, "behavior.db")); got != 2 {
+		t.Fatalf("expected target row count to stay 2 after second migrate, got %d", got)
+	}
+}
+
+func TestRunCLI_BehaviorMigrate_NoSourceTableIsCleanNoop(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	flintDir := filepath.Join(home, ".flint")
+	if err := os.MkdirAll(flintDir, 0o755); err != nil {
+		t.Fatalf("mkdir ~/.flint: %v", err)
+	}
+	seedTargetBehaviorTable(t, filepath.Join(flintDir, "behavior.db"), 0)
+
+	store := newMemStore()
+	code, out, errOut := runCLI(t, store, "behavior", "migrate")
+	if code != 0 {
+		t.Fatalf("expected zero exit for no-op migrate, got %d stderr=%q", code, errOut)
+	}
+	if errOut != "" {
+		t.Fatalf("expected empty stderr for no-op migrate, got %q", errOut)
+	}
+	if !strings.Contains(out, "migrated 0 behavioral observations") {
+		t.Fatalf("expected zero migrated output, got %q", out)
+	}
+}
+
+func TestRunCLI_BehaviorMigrate_OnErrorWarnsAndExitsZero(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	flintDir := filepath.Join(home, ".flint")
+	if err := os.MkdirAll(flintDir, 0o755); err != nil {
+		t.Fatalf("mkdir ~/.flint: %v", err)
+	}
+	// Make source path invalid: SQLite cannot open a directory as a DB file.
+	if err := os.MkdirAll(filepath.Join(flintDir, "flint.db"), 0o755); err != nil {
+		t.Fatalf("mkdir source-as-dir: %v", err)
+	}
+
+	store := newMemStore()
+	code, _, errOut := runCLI(t, store, "behavior", "migrate")
+	if code != 0 {
+		t.Fatalf("expected zero exit on migration warning path, got %d", code)
+	}
+	if !strings.Contains(errOut, "behavior migration: warning:") {
+		t.Fatalf("expected warning prefix on stderr, got %q", errOut)
+	}
+}
+
+func seedSourceBehaviorTable(t *testing.T, dbPath string, n int) {
+	t.Helper()
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open source db: %v", err)
+	}
+	defer db.Close()
+	seedBehaviorTable(t, db, n)
+}
+
+func seedTargetBehaviorTable(t *testing.T, dbPath string, n int) {
+	t.Helper()
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open target db: %v", err)
+	}
+	defer db.Close()
+	seedBehaviorTable(t, db, n)
+}
+
+func seedBehaviorTable(t *testing.T, db *sql.DB, n int) {
+	t.Helper()
+	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS behavioral_observations (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			category TEXT NOT NULL,
+			field TEXT NOT NULL,
+			value TEXT NOT NULL,
+			confidence INTEGER NOT NULL CHECK (confidence BETWEEN 0 AND 100),
+			occurrence_count INTEGER NOT NULL DEFAULT 1,
+			status TEXT NOT NULL DEFAULT 'observed' CHECK (status IN ('observed','candidate','dismissed')),
+			last_seen DATETIME NOT NULL,
+			created_at DATETIME NOT NULL
+		);
+	`); err != nil {
+		t.Fatalf("create behavioral table: %v", err)
+	}
+	if _, err := db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_behavioral_obs_unique
+			ON behavioral_observations(category, field, value)
+	`); err != nil {
+		t.Fatalf("create behavior index: %v", err)
+	}
+	for i := 0; i < n; i++ {
+		stamp := time.Date(2026, 5, 20, 12, i, 0, 0, time.UTC).Format(time.RFC3339)
+		if _, err := db.Exec(
+			`INSERT INTO behavioral_observations(id, category, field, value, confidence, occurrence_count, status, last_seen, created_at)
+			 VALUES(?, 'tone', 'language', ?, 90, 3, 'candidate', ?, ?)`,
+			i+1, fmt.Sprintf("es-%d", i+1), stamp, stamp,
+		); err != nil {
+			t.Fatalf("insert behavior row #%d: %v", i+1, err)
+		}
+	}
+}
+
+func behaviorRowCount(t *testing.T, dbPath string) int {
+	t.Helper()
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("open db for count: %v", err)
+	}
+	defer db.Close()
+	var n int
+	if err := db.QueryRow(`SELECT COUNT(1) FROM behavioral_observations`).Scan(&n); err != nil {
+		t.Fatalf("count behavioral rows: %v", err)
+	}
+	return n
 }
 
 func TestRunCLI_SessionEndAutoActive(t *testing.T) {

@@ -36,7 +36,7 @@ func TestService_Doctor_ForwardsAutopilotFields(t *testing.T) {
 			AutopilotThreshold:        AutopilotSessionCloseThreshold,
 		},
 	}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	got, err := svc.Doctor()
 	if err != nil {

@@ -54,7 +54,7 @@ func TestSuggestRelations_ReturnsCandidatesWithoutPersisting(t *testing.T) {
 		{ID: 12, Content: "auth refresh tokens", TopicKey: "architecture/auth"},
 		{ID: 13, Content: "logging pattern",     TopicKey: "ops/logs"},
 	}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	req := SaveRequest{
 		Content:  "rotate refresh tokens for auth",
@@ -97,7 +97,7 @@ func TestSuggestRelations_ReturnsCandidatesWithoutPersisting(t *testing.T) {
 func TestSuggestRelations_TriangulateNoTopicNoSuggestions(t *testing.T) {
 	fake := &suggestRelStore{}
 	fake.recallResults = []MemoryItem{{ID: 99, Content: "anything"}}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	got, err := svc.SuggestRelations(SaveRequest{Content: "no topic", TopicKey: ""})
 	if err != nil {
@@ -119,7 +119,7 @@ func TestSuggestRelations_TriangulateRelationTypeFromSpec(t *testing.T) {
 	fake.recallResults = []MemoryItem{
 		{ID: 21, Content: "match", TopicKey: "architecture/auth"},
 	}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	got, err := svc.SuggestRelations(SaveRequest{
 		Content:  "auth body",

@@ -45,7 +45,7 @@ func (m *metaMemStore) SaveWithMeta(req app.SaveRequest) (int64, error) {
 // them through the service layer onto the store.
 func TestRunCLI_SaveWithMetadataFlags(t *testing.T) {
 	store := newMetaMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout2, stderr2 strings.Builder
 	exit := app.RunCLI(svc, []string{"save",
 		"--title=Auth Model",
@@ -109,7 +109,7 @@ func TestRunCLI_SaveWithoutFlagsStaysBackwardCompatible(t *testing.T) {
 // contract (`nt-cli save "note"`) is preserved.
 func TestRunCLI_SaveOnlyContentArgIsRequired(t *testing.T) {
 	store := newMetaMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr strings.Builder
 	code := app.RunCLI(svc, []string{"save", "--type=decision"}, &stdout, &stderr)
 	if code == 0 {
@@ -128,7 +128,7 @@ func TestRunCLI_SaveOnlyContentArgIsRequired(t *testing.T) {
 // can save content that itself contains `--`-prefixed words.
 func TestRunCLI_SaveContentSurvivesEmbeddedFlagLikeText(t *testing.T) {
 	store := newMetaMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr strings.Builder
 	code := app.RunCLI(svc, []string{
 		"save", "--type=decision", "use --foo flag for X",
@@ -146,7 +146,7 @@ func TestRunCLI_SaveContentSurvivesEmbeddedFlagLikeText(t *testing.T) {
 // becomes `manual` and scope becomes `project` automatically.
 func TestRunCLI_SaveDefaultsAppliedWhenOnlyTopicKeyGiven(t *testing.T) {
 	store := newMetaMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr strings.Builder
 	code := app.RunCLI(svc, []string{"save", "--topic-key=arch/db", "body"}, &stdout, &stderr)
 	if code != 0 {

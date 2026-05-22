@@ -33,7 +33,7 @@ func TestService_Doctor_ForwardsReport(t *testing.T) {
 			Summary:          "schema_version=3 fts=healthy integrity=ok memory_items=5 sessions=1",
 		},
 	}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 	report, err := svc.Doctor()
 	if err != nil {
 		t.Fatalf("Doctor: %v", err)
@@ -47,7 +47,7 @@ func TestService_Doctor_ForwardsReport(t *testing.T) {
 }
 
 func TestService_Doctor_CapabilityError(t *testing.T) {
-	svc := NewService(&fakeStore{})
+	svc := NewService(&fakeStore{}, nil)
 	_, err := svc.Doctor()
 	if err == nil {
 		t.Fatalf("expected capability error")

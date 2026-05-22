@@ -57,7 +57,7 @@ var _ app.FilterStore = (*graphRecallMemStore)(nil)
 func TestLocalRecall_FFOff_UsesPlainPath(t *testing.T) {
 	withGraphFlag(t, "")
 	store := newGraphRecallMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	if _, err := store.SaveWithMeta(app.SaveRequest{
 		Content: "alpha plain", CreatedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 	}); err != nil {
@@ -86,7 +86,7 @@ func TestLocalRecall_FFOff_UsesPlainPath(t *testing.T) {
 func TestLocalRecall_FFOn_RoutesToGraphAware(t *testing.T) {
 	withGraphFlag(t, "1")
 	store := newGraphRecallMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	if _, err := store.SaveWithMeta(app.SaveRequest{
 		Content: "alpha plain", CreatedAt: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 	}); err != nil {
@@ -116,7 +116,7 @@ func TestLocalRecall_FFOn_RoutesToGraphAware(t *testing.T) {
 func TestLocalRecall_FFOn_ForwardsIncludeSuperseded(t *testing.T) {
 	withGraphFlag(t, "1")
 	store := newGraphRecallMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	payload := newCallReq(t, "local_recall", map[string]interface{}{
 		"query":              "alpha",
@@ -141,7 +141,7 @@ func TestLocalRecall_FFOn_ForwardsIncludeSuperseded(t *testing.T) {
 func TestLocalRecall_FFOn_DefaultIncludeSupersededIsFalse(t *testing.T) {
 	withGraphFlag(t, "1")
 	store := newGraphRecallMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	payload := newCallReq(t, "local_recall", map[string]interface{}{"query": "alpha"})
 	resp, _ := handleRequest(payload, svc)
@@ -163,7 +163,7 @@ func TestLocalRecall_FFOn_DefaultIncludeSupersededIsFalse(t *testing.T) {
 func TestLocalRecall_ToolDescriptor_FFOff_NoIncludeSuperseded(t *testing.T) {
 	withGraphFlag(t, "")
 	store := newGraphRecallMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	req := request{JSONRPC: "2.0", ID: json.RawMessage(`1`), Method: "tools/list"}
 	payload, _ := json.Marshal(req)
@@ -189,7 +189,7 @@ func TestLocalRecall_ToolDescriptor_FFOff_NoIncludeSuperseded(t *testing.T) {
 func TestLocalRecall_ToolDescriptor_FFOn_AdvertisesIncludeSuperseded(t *testing.T) {
 	withGraphFlag(t, "1")
 	store := newGraphRecallMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	req := request{JSONRPC: "2.0", ID: json.RawMessage(`1`), Method: "tools/list"}
 	payload, _ := json.Marshal(req)

@@ -13,7 +13,7 @@ import (
 // store that satisfies both Store and FilterStore.
 func runCLIFilter(t *testing.T, store *filterMemStore, args ...string) (int, string, string) {
 	t.Helper()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLI(svc, args, &stdout, &stderr)
 	return code, stdout.String(), stderr.String()

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"flint/internal/app"
 	"flint/internal/mcp"
@@ -40,8 +41,15 @@ func main() {
 		os.Exit(1)
 	}
 	defer repo.Close()
+	behaviorDBPath := filepath.Join(filepath.Dir(dbPath), "behavior.db")
+	behaviorRepo, err := store.NewBehaviorSQLiteStore(behaviorDBPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "behavior db error: %v\n", err)
+		os.Exit(1)
+	}
+	defer behaviorRepo.Close()
 
-	svc := app.NewService(repo)
+	svc := app.NewService(repo, behaviorRepo)
 
 	// Resolve active project at boot and inject into service so all
 	// read/write paths are automatically scoped (tasks 2.4–2.6).

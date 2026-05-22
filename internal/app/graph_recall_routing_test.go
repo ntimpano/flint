@@ -100,7 +100,7 @@ func TestRecall_FFOff_UsesPlainPath(t *testing.T) {
 		plainRecallResult: []MemoryItem{{ID: 1, Content: "plain"}},
 		graphAwareResult:  []MemoryItem{{ID: 99, Content: "graph"}},
 	}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 
 	got, err := svc.Recall("alpha", 5)
 	if err != nil {
@@ -126,7 +126,7 @@ func TestRecall_FFOn_RoutesToGraphAware(t *testing.T) {
 		plainRecallResult: []MemoryItem{{ID: 1, Content: "plain"}},
 		graphAwareResult:  []MemoryItem{{ID: 99, Content: "graph"}},
 	}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 
 	got, err := svc.Recall("  alpha  ", 7)
 	if err != nil {
@@ -158,7 +158,7 @@ func TestRecall_FFOn_LegacyStore_FallsBackToPlain(t *testing.T) {
 	// fakeStore (the legacy fake from service_test.go) implements only
 	// Store — no GraphRecallStore — so the FF on branch must fall back.
 	fake := &fakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	_, err := svc.Recall("alpha", 5)
 	if err != nil {
@@ -175,7 +175,7 @@ func TestRecallWithOptions_FFOff_UsesFilterPath(t *testing.T) {
 		recallFilteredResult: []MemoryItem{{ID: 2, Content: "filter"}},
 		graphAwareResult:     []MemoryItem{{ID: 99, Content: "graph"}},
 	}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 
 	got, err := svc.RecallWithOptions(RecallOptions{Query: "alpha", Type: "decision"})
 	if err != nil {
@@ -202,7 +202,7 @@ func TestRecallWithOptions_FFOn_RoutesToGraphAware(t *testing.T) {
 		recallFilteredResult: []MemoryItem{{ID: 2, Content: "filter"}},
 		graphAwareResult:     []MemoryItem{{ID: 99, Content: "graph"}},
 	}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 
 	got, err := svc.RecallWithOptions(RecallOptions{
 		Query:             "alpha",
@@ -236,7 +236,7 @@ func TestRecall_FFOn_GraphErrorPropagates(t *testing.T) {
 	store := &graphRecallFakeStore{
 		graphAwareErr: errors.New("graph boom"),
 	}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 
 	_, err := svc.Recall("alpha", 5)
 	if err == nil {

@@ -38,7 +38,7 @@ var _ app.ImportStore = (*importMemStore)(nil)
 
 func runCLIImport(t *testing.T, store *importMemStore, args ...string) (int, string, string) {
 	t.Helper()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLI(svc, args, &stdout, &stderr)
 	return code, stdout.String(), stderr.String()

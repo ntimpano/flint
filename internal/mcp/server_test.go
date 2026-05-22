@@ -185,7 +185,7 @@ func toolPayloadText(t *testing.T, resp response) (string, bool) {
 
 func TestToolsList_IncludesGetAndUpdate(t *testing.T) {
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 
 	req := request{JSONRPC: "2.0", ID: json.RawMessage(`1`), Method: "tools/list"}
 	payload, err := json.Marshal(req)
@@ -214,7 +214,7 @@ func TestLocalGet_ExistingIDReturnsRecord(t *testing.T) {
 	store := newMemStore()
 	created := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
 	id, _ := store.Save("hello", created)
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 
 	payload := newCallReq(t, "local_get", map[string]interface{}{"id": id})
 	resp, ok := handleRequest(payload, svc)
@@ -249,7 +249,7 @@ func TestLocalGet_ExistingIDReturnsRecord(t *testing.T) {
 
 func TestLocalGet_MissingIDReturnsError(t *testing.T) {
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 
 	payload := newCallReq(t, "local_get", map[string]interface{}{"id": 999})
 	resp, ok := handleRequest(payload, svc)
@@ -264,7 +264,7 @@ func TestLocalGet_MissingIDReturnsError(t *testing.T) {
 
 func TestLocalGet_InvalidIDReturnsError(t *testing.T) {
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 
 	payload := newCallReq(t, "local_get", map[string]interface{}{"id": 0})
 	resp, ok := handleRequest(payload, svc)
@@ -281,7 +281,7 @@ func TestLocalUpdate_ExistingIDUpdatesContent(t *testing.T) {
 	store := newMemStore()
 	created := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
 	id, _ := store.Save("old", created)
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 
 	payload := newCallReq(t, "local_update", map[string]interface{}{"id": id, "content": "new"})
 	resp, ok := handleRequest(payload, svc)
@@ -307,7 +307,7 @@ func TestLocalUpdate_ExistingIDUpdatesContent(t *testing.T) {
 
 func TestLocalUpdate_MissingIDReturnsError(t *testing.T) {
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 
 	payload := newCallReq(t, "local_update", map[string]interface{}{"id": 999, "content": "x"})
 	resp, ok := handleRequest(payload, svc)
@@ -324,7 +324,7 @@ func TestLocalUpdate_EmptyContentReturnsError(t *testing.T) {
 	store := newMemStore()
 	created := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
 	id, _ := store.Save("old", created)
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 
 	payload := newCallReq(t, "local_update", map[string]interface{}{"id": id, "content": "   "})
 	resp, ok := handleRequest(payload, svc)
@@ -343,7 +343,7 @@ func TestLocalUpdate_EmptyContentReturnsError(t *testing.T) {
 
 func TestLocalRecordObservation_ValidMarkerReturnsID(t *testing.T) {
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 
 	payload := newCallReq(t, "local_record_observation", map[string]interface{}{
 		"marker": "[BEHAVIORAL_OBSERVATION: category=tone, field=language, value=es, confidence=90]",
@@ -363,7 +363,7 @@ func TestLocalRecordObservation_ValidMarkerReturnsID(t *testing.T) {
 
 func TestLocalRecordObservation_MalformedMarkerReturnsNonFatalTextError(t *testing.T) {
 	store := newMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, store)
 
 	payload := newCallReq(t, "local_record_observation", map[string]interface{}{
 		"marker": "[BEHAVIORAL_OBSERVATION: category=tone, value=es, confidence=90]",

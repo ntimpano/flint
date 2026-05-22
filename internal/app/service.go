@@ -164,6 +164,7 @@ var ErrNotFound = errors.New("note not found")
 
 type Service struct {
 	repo            Store
+	behaviorRepo    BehavioralStore
 	activeProjectID int64 // resolved at boot, 0 = no project scoping
 	// ProjectEngine handles project detection/switch/list/current.
 	// Wired at boot when the store implements ProjectStore.
@@ -183,8 +184,8 @@ func (s *Service) ActiveProjectID() int64 {
 	return s.activeProjectID
 }
 
-func NewService(repo Store) *Service {
-	svc := &Service{repo: repo}
+func NewService(repo Store, behaviorRepo BehavioralStore) *Service {
+	svc := &Service{repo: repo, behaviorRepo: behaviorRepo}
 	// Auto-wire the project engine when the store implements ProjectStore.
 	// This covers both production (SQLiteStore) and test doubles that embed
 	// ProjectStore-like capabilities.
@@ -513,11 +514,7 @@ func (s *Service) SessionStore() SessionStore {
 
 // BehavioralStore exposes the optional behavioral-capable store adapter.
 func (s *Service) BehavioralStore() BehavioralStore {
-	bs, ok := s.repo.(BehavioralStore)
-	if !ok {
-		return nil
-	}
-	return bs
+	return s.behaviorRepo
 }
 
 // RecordObservationFromMarker parses a behavioral marker and persists it.

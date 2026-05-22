@@ -49,7 +49,7 @@ func writeImportFixture(t *testing.T, name, body string) string {
 // receives parsed records, response is success.
 func TestMCP_LocalImport_Dispatches(t *testing.T) {
 	store := newImportMemStoreMCP()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	path := writeImportFixture(t, "in.json",
 		`[{"content":"a","topic_key":"k1"},{"content":"b","topic_key":"k2"}]`)
 
@@ -71,7 +71,7 @@ func TestMCP_LocalImport_Dispatches(t *testing.T) {
 // MUST surface the planned counts in the response text.
 func TestMCP_LocalImport_DryRun(t *testing.T) {
 	store := newImportMemStoreMCP()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	path := writeImportFixture(t, "in.json", `[{"content":"x"}]`)
 
 	result, rpcErr := callTool(t, svc, "local_import", map[string]interface{}{
@@ -103,7 +103,7 @@ func TestMCP_LocalImport_ValidationErrors(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := newImportMemStoreMCP()
-			svc := app.NewService(store)
+			svc := app.NewService(store, nil)
 			result, rpcErr := callTool(t, svc, "local_import", tc.args)
 			if rpcErr != nil {
 				t.Fatalf("expected tool error, got rpc error: %+v", rpcErr)

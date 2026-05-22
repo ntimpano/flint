@@ -33,7 +33,7 @@ func (f *backupFakeStore) Restore(src string) error {
 // to the store and returns no error.
 func TestService_Backup_ForwardsPath(t *testing.T) {
 	fake := &backupFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 	if err := svc.Backup("  /tmp/snap.db  "); err != nil {
 		t.Fatalf("Backup: %v", err)
 	}
@@ -47,7 +47,7 @@ func TestService_Backup_ForwardsPath(t *testing.T) {
 // layer without calling the store.
 func TestService_Backup_RejectsEmpty(t *testing.T) {
 	fake := &backupFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 	if err := svc.Backup("   "); err == nil {
 		t.Fatalf("expected error for empty path")
 	}
@@ -59,7 +59,7 @@ func TestService_Backup_RejectsEmpty(t *testing.T) {
 // TestService_Backup_CapabilityError: a Store without BackupStore returns
 // a clear capability error (defensive type-assert pattern).
 func TestService_Backup_CapabilityError(t *testing.T) {
-	svc := NewService(&fakeStore{})
+	svc := NewService(&fakeStore{}, nil)
 	err := svc.Backup("/tmp/x.db")
 	if err == nil {
 		t.Fatalf("expected capability error")
@@ -72,7 +72,7 @@ func TestService_Backup_CapabilityError(t *testing.T) {
 // TestService_Restore_ForwardsPath mirrors Backup.
 func TestService_Restore_ForwardsPath(t *testing.T) {
 	fake := &backupFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 	if err := svc.Restore("/tmp/in.db"); err != nil {
 		t.Fatalf("Restore: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestService_Restore_ForwardsPath(t *testing.T) {
 
 func TestService_Restore_RejectsEmpty(t *testing.T) {
 	fake := &backupFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 	if err := svc.Restore(""); err == nil {
 		t.Fatalf("expected error for empty path")
 	}
@@ -94,7 +94,7 @@ func TestService_Restore_RejectsEmpty(t *testing.T) {
 }
 
 func TestService_Restore_CapabilityError(t *testing.T) {
-	svc := NewService(&fakeStore{})
+	svc := NewService(&fakeStore{}, nil)
 	err := svc.Restore("/tmp/in.db")
 	if err == nil {
 		t.Fatalf("expected capability error")

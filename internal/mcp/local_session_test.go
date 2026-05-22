@@ -95,7 +95,7 @@ func callTool(t *testing.T, svc *app.Service, name string, args map[string]inter
 // return a non-error confirmation payload.
 func TestMCP_LocalSessionStart_Dispatches(t *testing.T) {
 	store := newSessionMemStoreMCP()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	result, rpcErr := callTool(t, svc, "local_session_start", map[string]interface{}{
 		"session_id": "sess-1",
@@ -115,7 +115,7 @@ func TestMCP_LocalSessionStart_Dispatches(t *testing.T) {
 // close contract: end succeeds when a summary already exists.
 func TestMCP_LocalSessionEnd_Dispatches(t *testing.T) {
 	store := newSessionMemStoreMCP()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	_, _ = callTool(t, svc, "local_session_summary", map[string]interface{}{
 		"session_id": "sess-2",
@@ -140,7 +140,7 @@ func TestMCP_LocalSessionEnd_Dispatches(t *testing.T) {
 // the store verbatim via SessionSummary.
 func TestMCP_LocalSessionSummary_ForwardsContent(t *testing.T) {
 	store := newSessionMemStoreMCP()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	result, rpcErr := callTool(t, svc, "local_session_summary", map[string]interface{}{
 		"session_id": "sess-3",
@@ -174,7 +174,7 @@ func TestMCP_LocalSession_ValidationErrors(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := newSessionMemStoreMCP()
-			svc := app.NewService(store)
+			svc := app.NewService(store, nil)
 			result, rpcErr := callTool(t, svc, tc.tool, tc.args)
 			if rpcErr != nil {
 				t.Fatalf("expected tool error, got rpc error: %+v", rpcErr)

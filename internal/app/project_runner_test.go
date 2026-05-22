@@ -56,7 +56,7 @@ func (p *projectMemStore) Restore(src string) error { return nil }
 
 func runCLIProject(t *testing.T, store *projectMemStore, args ...string) (int, string, string) {
 	t.Helper()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLI(svc, args, &stdout, &stderr)
 	return code, stdout.String(), stderr.String()

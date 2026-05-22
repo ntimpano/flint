@@ -45,7 +45,7 @@ func (e *autoswitchEngine) Confirm(candidate string) error {
 
 // buildAutoswitchSvc builds a Service with the injected engine.
 func buildAutoswitchSvc(store *autoswitchProjectStore, eng app.ProjectEngine) *app.Service {
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	svc.ProjectEng = eng
 	return svc
 }
@@ -244,7 +244,7 @@ func TestRunCLIWithStdin_NonMemoryCommand_NoAutoswitch(t *testing.T) {
 	// "known/high/nt-cli" (project #2). If autoswitch fires for "project"
 	// command, the active project would change.
 	store := newProjectMemStore() // active = default (#1)
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	// Inject a controllable engine that would switch if called.
 	switchCalled := false

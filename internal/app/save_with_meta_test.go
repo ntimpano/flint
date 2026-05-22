@@ -34,7 +34,7 @@ func (m *metaFakeStore) SaveWithMeta(req SaveRequest) (int64, error) {
 // and `scope=project` per design.md.
 func TestServiceSaveWithMeta_AppliesDefaultsWhenFieldsEmpty(t *testing.T) {
 	store := &metaFakeStore{}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 
 	id, err := svc.SaveWithMeta(SaveRequest{Content: "hello"})
 	if err != nil {
@@ -67,7 +67,7 @@ func TestServiceSaveWithMeta_AppliesDefaultsWhenFieldsEmpty(t *testing.T) {
 // forwarded verbatim and is NOT overwritten by defaults.
 func TestServiceSaveWithMeta_PreservesExplicitMetadata(t *testing.T) {
 	store := &metaFakeStore{}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 
 	_, err := svc.SaveWithMeta(SaveRequest{
 		Content:  "decision body",
@@ -107,7 +107,7 @@ func TestServiceSaveWithMeta_TrimsAndValidatesContent(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := &metaFakeStore{}
-			svc := NewService(store)
+			svc := NewService(store, nil)
 			_, err := svc.SaveWithMeta(SaveRequest{Content: tc.content})
 			if err == nil {
 				t.Fatalf("expected error for %q content", tc.content)
@@ -120,7 +120,7 @@ func TestServiceSaveWithMeta_TrimsAndValidatesContent(t *testing.T) {
 
 	// Trimming: leading/trailing whitespace is stripped before forwarding.
 	store := &metaFakeStore{}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 	if _, err := svc.SaveWithMeta(SaveRequest{Content: "  body  "}); err != nil {
 		t.Fatalf("SaveWithMeta: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestServiceSaveWithMeta_TrimsAndValidatesContent(t *testing.T) {
 // MUST return a clear error rather than silently dropping metadata.
 func TestServiceSaveWithMeta_FailsGracefullyWhenStoreLacksMetadata(t *testing.T) {
 	legacy := &fakeStore{} // implements Store but NOT MetadataStore
-	svc := NewService(legacy)
+	svc := NewService(legacy, nil)
 
 	_, err := svc.SaveWithMeta(SaveRequest{Content: "hello", Type: "decision"})
 	if err == nil {
@@ -153,7 +153,7 @@ func TestServiceSaveWithMeta_FailsGracefullyWhenStoreLacksMetadata(t *testing.T)
 // surface directly to the caller — no swallowing.
 func TestServiceSaveWithMeta_PropagatesStoreError(t *testing.T) {
 	store := &metaFakeStore{saveMetaErr: errors.New("boom")}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 	_, err := svc.SaveWithMeta(SaveRequest{Content: "hello"})
 	if err == nil || err.Error() != "boom" {
 		t.Fatalf("expected store error to propagate, got %v", err)
@@ -165,7 +165,7 @@ func TestServiceSaveWithMeta_PropagatesStoreError(t *testing.T) {
 // existing Save() contract.
 func TestServiceSaveWithMeta_StampsCreatedAtUTC(t *testing.T) {
 	store := &metaFakeStore{}
-	svc := NewService(store)
+	svc := NewService(store, nil)
 
 	before := time.Now().UTC().Add(-time.Second)
 	if _, err := svc.SaveWithMeta(SaveRequest{Content: "x"}); err != nil {

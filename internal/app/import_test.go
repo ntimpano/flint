@@ -30,7 +30,7 @@ func (f *importFakeStore) ImportRecords(rows []ImportRecord) (ImportResult, erro
 // surfaced verbatim.
 func TestService_ImportJSON_ParsesAndForwards(t *testing.T) {
 	fake := &importFakeStore{result: ImportResult{Inserted: 2}}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	payload := `[
 		{"content": "alpha", "title": "A", "type": "decision", "topic_key": "arch/a", "scope": "project"},
@@ -56,7 +56,7 @@ func TestService_ImportJSON_ParsesAndForwards(t *testing.T) {
 // invoking ImportRecords on the store.
 func TestService_ImportJSON_DryRunSkipsStore(t *testing.T) {
 	fake := &importFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	payload := `[{"content": "x"}, {"content": "y"}]`
 	res, err := svc.ImportJSON([]byte(payload), true)
@@ -77,7 +77,7 @@ func TestService_ImportJSON_DryRunSkipsStore(t *testing.T) {
 // error out without touching the store.
 func TestService_ImportJSON_RejectsInvalidJSON(t *testing.T) {
 	fake := &importFakeStore{}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	if _, err := svc.ImportJSON([]byte("not json"), false); err == nil {
 		t.Fatalf("expected JSON parse error")
@@ -91,7 +91,7 @@ func TestService_ImportJSON_RejectsInvalidJSON(t *testing.T) {
 // type-assert path: a Store that doesn't implement ImportStore returns
 // a clear error rather than degrading silently.
 func TestService_ImportJSON_RequiresImportStore(t *testing.T) {
-	svc := NewService(&fakeStore{})
+	svc := NewService(&fakeStore{}, nil)
 	if _, err := svc.ImportJSON([]byte(`[{"content":"x"}]`), false); err == nil {
 		t.Fatalf("expected capability error")
 	} else if !strings.Contains(strings.ToLower(err.Error()), "import") {
@@ -104,7 +104,7 @@ func TestService_ImportJSON_RequiresImportStore(t *testing.T) {
 // imports of partially malformed files still succeed for valid rows.
 func TestService_ImportJSON_SkipsEmptyContent(t *testing.T) {
 	fake := &importFakeStore{result: ImportResult{Inserted: 1}}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	payload := `[{"content": ""}, {"content": "valid"}, {"content": "   "}]`
 	if _, err := svc.ImportJSON([]byte(payload), false); err != nil {

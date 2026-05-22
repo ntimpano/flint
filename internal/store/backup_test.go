@@ -14,7 +14,7 @@ import (
 // store can be restored into an empty store and produce identical rows.
 func TestBackup_RestoreRoundTrip(t *testing.T) {
 	src := openTempStoreT(t)
-	srcSvc := app.NewService(src)
+	srcSvc := app.NewService(src, nil)
 	if err := srcSvc.Init(); err != nil {
 		t.Fatalf("init src: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestBackup_RestoreRoundTrip(t *testing.T) {
 		t.Fatalf("new dst: %v", err)
 	}
 	defer dst.Close()
-	if err := app.NewService(dst).Init(); err != nil {
+	if err := app.NewService(dst, nil).Init(); err != nil {
 		t.Fatalf("init dst: %v", err)
 	}
 	if err := dst.Restore(backupPath); err != nil {
@@ -109,7 +109,7 @@ func TestBackup_RestoreRoundTrip(t *testing.T) {
 // directory doesn't exist — backup MUST NOT silently no-op.
 func TestBackup_RejectsMissingDir(t *testing.T) {
 	src := openTempStoreT(t)
-	if err := app.NewService(src).Init(); err != nil {
+	if err := app.NewService(src, nil).Init(); err != nil {
 		t.Fatalf("init: %v", err)
 	}
 	err := src.Backup("/nope/does/not/exist/backup.db")
@@ -122,7 +122,7 @@ func TestBackup_RejectsMissingDir(t *testing.T) {
 // must error before touching the live DB.
 func TestBackup_Restore_RejectsMissingFile(t *testing.T) {
 	src := openTempStoreT(t)
-	if err := app.NewService(src).Init(); err != nil {
+	if err := app.NewService(src, nil).Init(); err != nil {
 		t.Fatalf("init: %v", err)
 	}
 	if err := src.Restore("/nope/missing.db"); err == nil {

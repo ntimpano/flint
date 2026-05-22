@@ -21,7 +21,7 @@ func TestSessionEndStrict_BlocksWhenNoSummary(t *testing.T) {
 	fake.events = []SessionEvent{
 		{SessionID: "s-1", Kind: "start", CreatedAt: time.Now().UTC()},
 	}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	err := svc.SessionEndStrict("s-1")
 	if err == nil {
@@ -43,7 +43,7 @@ func TestSessionEndStrict_PassesWhenSummaryPresent(t *testing.T) {
 		{SessionID: "s-2", Kind: "start", CreatedAt: time.Now().UTC()},
 		{SessionID: "s-2", Kind: "summary", Summary: "done", CreatedAt: time.Now().UTC()},
 	}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	if err := svc.SessionEndStrict("s-2"); err != nil {
 		t.Fatalf("SessionEndStrict: %v", err)
@@ -56,7 +56,7 @@ func TestSessionEndStrict_PassesWhenSummaryPresent(t *testing.T) {
 // TestSessionEndStrict_RejectsEmptyID guards against silent merging on
 // an empty session id (matches the SessionStart/End validation rules).
 func TestSessionEndStrict_RejectsEmptyID(t *testing.T) {
-	svc := NewService(&autopilotSessionStore{})
+	svc := NewService(&autopilotSessionStore{}, nil)
 	if err := svc.SessionEndStrict("   "); err == nil {
 		t.Fatalf("expected error for empty session id")
 	}

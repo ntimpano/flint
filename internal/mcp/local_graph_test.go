@@ -76,7 +76,7 @@ func withGraphFlag(t *testing.T, value string) {
 func TestMCP_GraphTools_HiddenWhenFlagOff(t *testing.T) {
 	withGraphFlag(t, "")
 	store := newGraphMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	req := request{JSONRPC: "2.0", ID: json.RawMessage(`1`), Method: "tools/list"}
 	payload, _ := json.Marshal(req)
@@ -97,7 +97,7 @@ func TestMCP_GraphTools_HiddenWhenFlagOff(t *testing.T) {
 func TestMCP_GraphTools_AdvertisedWhenFlagOn(t *testing.T) {
 	withGraphFlag(t, "1")
 	store := newGraphMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	req := request{JSONRPC: "2.0", ID: json.RawMessage(`1`), Method: "tools/list"}
 	payload, _ := json.Marshal(req)
@@ -123,7 +123,7 @@ func TestMCP_GraphTools_AdvertisedWhenFlagOn(t *testing.T) {
 func TestMCP_RelateCall_FlagOffRejects(t *testing.T) {
 	withGraphFlag(t, "")
 	store := newGraphMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	result, _ := callTool(t, svc, "relate", map[string]interface{}{
 		"source_id":     1,
@@ -155,7 +155,7 @@ func TestMCP_RelateCall_HappyPath(t *testing.T) {
 	// the test intent close to the real wiring).
 	_, _ = store.Save("a", time.Now().UTC())
 	_, _ = store.Save("b", time.Now().UTC())
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	result, rpcErr := callTool(t, svc, "relate", map[string]interface{}{
 		"source_id":     1,
@@ -195,7 +195,7 @@ func TestMCP_RelateCall_ValidationErrorsSurface(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			store := newGraphMemStore()
-			svc := app.NewService(store)
+			svc := app.NewService(store, nil)
 			result, _ := callTool(t, svc, "relate", tc.args)
 			if result == nil {
 				t.Fatalf("expected result map, got nil")
@@ -222,7 +222,7 @@ func TestMCP_GraphNeighborsCall_HappyPath(t *testing.T) {
 	store.neighborsRet = []app.MemoryRelation{
 		{ID: 7, SourceID: 1, TargetID: 2, RelationType: "related", CreatedAt: time.Date(2026, 5, 6, 12, 0, 0, 0, time.UTC)},
 	}
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	result, rpcErr := callTool(t, svc, "graph_neighbors", map[string]interface{}{
 		"id":        1,
@@ -279,7 +279,7 @@ func TestMCP_GraphNeighborsCall_DirectionParsing(t *testing.T) {
 	for _, tc := range cases {
 		t.Run("dir="+tc.raw, func(t *testing.T) {
 			store := newGraphMemStore()
-			svc := app.NewService(store)
+			svc := app.NewService(store, nil)
 			args := map[string]interface{}{"id": 1}
 			if tc.raw != "" {
 				args["direction"] = tc.raw
@@ -297,7 +297,7 @@ func TestMCP_GraphNeighborsCall_DirectionParsing(t *testing.T) {
 func TestMCP_GraphNeighborsCall_FlagOffRejects(t *testing.T) {
 	withGraphFlag(t, "")
 	store := newGraphMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	result, _ := callTool(t, svc, "graph_neighbors", map[string]interface{}{"id": 1})
 	if result != nil {
 		isErr, _ := result["isError"].(bool)

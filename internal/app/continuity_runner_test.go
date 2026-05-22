@@ -49,7 +49,7 @@ func seedContinuityStore(t *testing.T) (*memStore, string) {
 // be 1.0 because the seeded store carries every expected_marker.
 func TestRunContinuityHarness_WritesBaselineJSON(t *testing.T) {
 	store, outPath := seedContinuityStore(t)
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	baseline, err := svc.RunContinuityHarness("../../testdata/parity/queries.json", outPath)
 	if err != nil {
@@ -105,7 +105,7 @@ func TestRunContinuityHarness_PartialMissReportsFraction(t *testing.T) {
 		}
 	}
 	dir := t.TempDir()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	baseline, err := svc.RunContinuityHarness("../../testdata/parity/queries.json", filepath.Join(dir, "baseline.json"))
 	if err != nil {
@@ -133,7 +133,7 @@ func TestRunContinuityHarness_PartialMissReportsFraction(t *testing.T) {
 // metric fields (timestamps may differ; everything else must not).
 func TestRunContinuityHarness_RegenerationIsIdempotent(t *testing.T) {
 	store, _ := seedContinuityStore(t)
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	dir := t.TempDir()
 
 	a, err := svc.RunContinuityHarness("../../testdata/parity/queries.json", filepath.Join(dir, "a.json"))

@@ -37,7 +37,7 @@ var _ app.MetadataStore = (*metaMemStore)(nil)
 // return success.
 func TestMCP_LocalSaveAcceptsMetadataFields(t *testing.T) {
 	store := newMetaMemStoreMCP()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	args := map[string]interface{}{
 		"content":   "decision body",
@@ -93,7 +93,7 @@ func TestMCP_LocalSaveAcceptsMetadataFields(t *testing.T) {
 // (Service.Save, no MetadataStore requirement).
 func TestMCP_LocalSaveWithoutMetadataStaysBackwardCompatible(t *testing.T) {
 	store := newMemStore() // legacy fake, no MetadataStore
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	args := map[string]interface{}{"content": "plain"}
 	argsJSON, _ := json.Marshal(args)

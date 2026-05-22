@@ -16,7 +16,7 @@ import (
 // scorecard contract instead of transport boilerplate.
 func callParityScorecardMCP(t *testing.T, args map[string]interface{}) (string, bool) {
 	t.Helper()
-	svc := app.NewService(newMemStore())
+	svc := app.NewService(newMemStore(), nil)
 	rawArgs, _ := json.Marshal(args)
 	params, _ := json.Marshal(toolsCallParams{Name: "parity_scorecard", Arguments: rawArgs})
 	payload, _ := json.Marshal(request{JSONRPC: "2.0", ID: json.RawMessage(`1`), Method: "tools/call", Params: params})
@@ -137,7 +137,7 @@ func TestParityScorecard_MCPSurface_AdvertisesTool(t *testing.T) {
 // stdout so the CLI is parity with the MCP tool. Signals come from
 // command-line flags so the runbook can replay deterministic verdicts.
 func TestParityScorecard_CLISurface_ReturnsJSON(t *testing.T) {
-	svc := app.NewService(newMemStore())
+	svc := app.NewService(newMemStore(), nil)
 	var stdout, stderr bytes.Buffer
 	args := []string{
 		"parity", "scorecard",
@@ -167,7 +167,7 @@ func TestParityScorecard_CLISurface_ReturnsJSON(t *testing.T) {
 // surfaces typos instead of silently no-oping. `nt-cli parity` without a
 // subcommand or with an unknown one MUST exit non-zero with usage.
 func TestParityScorecard_CLISurface_RejectsUnknownSubcommand(t *testing.T) {
-	svc := app.NewService(newMemStore())
+	svc := app.NewService(newMemStore(), nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLI(svc, []string{"parity", "bogus"}, &stdout, &stderr)
 	if code == 0 {

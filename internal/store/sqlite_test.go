@@ -10,7 +10,7 @@ import (
 	"flint/internal/app"
 )
 
-func TestInit_MigrationV5ToV6_BehavioralTableExists(t *testing.T) {
+func TestInit_MigrationV5ToV6_SchemaVersionStamped(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "v5.db")
 
@@ -34,14 +34,6 @@ func TestInit_MigrationV5ToV6_BehavioralTableExists(t *testing.T) {
 
 	if err := s.Init(); err != nil {
 		t.Fatalf("Init from v5 to v6: %v", err)
-	}
-
-	var tableName string
-	if err := s.db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='behavioral_observations'`).Scan(&tableName); err != nil {
-		t.Fatalf("behavioral_observations table missing: %v", err)
-	}
-	if tableName != "behavioral_observations" {
-		t.Fatalf("expected behavioral_observations table, got %q", tableName)
 	}
 
 	v, err := s.SchemaVersion()

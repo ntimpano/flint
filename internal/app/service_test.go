@@ -50,6 +50,31 @@ func (f *fakeStore) Update(id int64, content string, updatedAt time.Time) (bool,
 	return f.updateResult, f.updateErr
 }
 
+type fakeBehavioralStore struct{}
+
+func (f *fakeBehavioralStore) RecordObservation(category, field, value string, confidence int, now time.Time) (int64, error) {
+	return 123, nil
+}
+func (f *fakeBehavioralStore) ListObservations(includeStatuses []string) ([]BehavioralObservation, error) {
+	return nil, nil
+}
+func (f *fakeBehavioralStore) GetObservation(id int64) (*BehavioralObservation, error) {
+	return nil, nil
+}
+func (f *fakeBehavioralStore) DismissObservation(id int64) error { return nil }
+func (f *fakeBehavioralStore) Candidates() ([]BehavioralObservation, error) {
+	return nil, nil
+}
+
+func TestServiceBehavioralStore_ReturnsInjectedRepo(t *testing.T) {
+	fake := &fakeStore{}
+	b := &fakeBehavioralStore{}
+	svc := NewService(fake, b)
+	if svc.BehavioralStore() != b {
+		t.Fatalf("expected injected behavioral store to be returned")
+	}
+}
+
 func TestServiceGet_ValidationRejectsBadIDs(t *testing.T) {
 	cases := []struct {
 		name string
@@ -62,7 +87,7 @@ func TestServiceGet_ValidationRejectsBadIDs(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fake := &fakeStore{}
-			svc := NewService(fake)
+			svc := NewService(fake, nil)
 
 			_, err := svc.Get(tc.id)
 			if err == nil {
@@ -84,7 +109,7 @@ func TestServiceGet_ValidIDDelegatesToStore(t *testing.T) {
 			UpdatedAt: time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC),
 		},
 	}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	got, err := svc.Get(7)
 	if err != nil {
@@ -104,7 +129,7 @@ func TestServiceGet_ValidIDDelegatesToStore(t *testing.T) {
 func TestServiceGet_PropagatesNotFound(t *testing.T) {
 	notFound := errors.New("not found")
 	fake := &fakeStore{getErr: notFound}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	_, err := svc.Get(42)
 	if err == nil {
@@ -126,7 +151,7 @@ func TestServiceUpdate_ValidationRejectsBadIDs(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fake := &fakeStore{}
-			svc := NewService(fake)
+			svc := NewService(fake, nil)
 
 			_, err := svc.Update(tc.id, "valid content")
 			if err == nil {
@@ -151,7 +176,7 @@ func TestServiceUpdate_ValidationRejectsEmptyContent(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fake := &fakeStore{}
-			svc := NewService(fake)
+			svc := NewService(fake, nil)
 
 			_, err := svc.Update(1, tc.content)
 			if err == nil {
@@ -166,7 +191,7 @@ func TestServiceUpdate_ValidationRejectsEmptyContent(t *testing.T) {
 
 func TestServiceUpdate_ValidInputUpdatesWithUTCTimestamp(t *testing.T) {
 	fake := &fakeStore{updateResult: true}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	before := time.Now().UTC()
 	ok, err := svc.Update(5, "new content")
@@ -197,7 +222,7 @@ func TestServiceUpdate_ValidInputUpdatesWithUTCTimestamp(t *testing.T) {
 
 func TestServiceUpdate_TrimsContentBeforeWrite(t *testing.T) {
 	fake := &fakeStore{updateResult: true}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	if _, err := svc.Update(5, "  padded  "); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -209,7 +234,7 @@ func TestServiceUpdate_TrimsContentBeforeWrite(t *testing.T) {
 
 func TestServiceUpdate_NotFoundReturnsFalse(t *testing.T) {
 	fake := &fakeStore{updateResult: false}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	ok, err := svc.Update(99, "x")
 	if err != nil {
@@ -222,7 +247,7 @@ func TestServiceUpdate_NotFoundReturnsFalse(t *testing.T) {
 
 func TestServiceList_GlobalFallbackWhenNoActiveProject(t *testing.T) {
 	fake := &fakeStore{listResult: []MemoryItem{{ID: 1, Content: "global"}}}
-	svc := NewService(fake)
+	svc := NewService(fake, nil)
 
 	items, err := svc.List(5)
 	if err != nil {

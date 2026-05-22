@@ -38,7 +38,7 @@ func TestLocalRecall_ActionableFFOff_PayloadIsLegacyArray(t *testing.T) {
 	withActionableFlag(t, "")
 	withGraphFlag(t, "")
 	store := newFilterMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	if _, err := store.SaveWithMeta(app.SaveRequest{
 		Content:   "decision body",
 		Title:     "Switch to JWT",
@@ -71,7 +71,7 @@ func TestLocalRecall_ActionableFFOn_WrappedShape(t *testing.T) {
 	withActionableFlag(t, "1")
 	withGraphFlag(t, "")
 	store := newFilterMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	if _, err := store.SaveWithMeta(app.SaveRequest{
 		Content:   "switch payload **Where**: internal/auth/middleware.go\n- step one\n- step two",
 		Title:     "Switch to JWT",
@@ -125,7 +125,7 @@ func TestLocalRecall_ActionableFFOn_NoMatchesShape(t *testing.T) {
 	withActionableFlag(t, "1")
 	withGraphFlag(t, "")
 	store := newFilterMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 
 	payload := newCallReq(t, "local_recall", map[string]interface{}{"query": "no-such-token"})
 	resp, _ := handleRequest(payload, svc)
@@ -165,7 +165,7 @@ func TestLocalRecall_ActionableFFOn_NextActionEmptyForNonActionableType(t *testi
 	withActionableFlag(t, "1")
 	withGraphFlag(t, "")
 	store := newFilterMemStore()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	if _, err := store.SaveWithMeta(app.SaveRequest{
 		Content:   "just a manual note",
 		Title:     "Manual",

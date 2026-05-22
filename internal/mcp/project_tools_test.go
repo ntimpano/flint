@@ -34,7 +34,7 @@ func newProjectMCPFixture(t *testing.T) *projectMCPFixture {
 	}
 	t.Cleanup(func() { repo.Close() })
 
-	svc := app.NewService(repo)
+	svc := app.NewService(repo, nil)
 	if err := svc.Init(); err != nil {
 		t.Fatalf("svc init: %v", err)
 	}

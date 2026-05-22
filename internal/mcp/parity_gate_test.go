@@ -145,8 +145,8 @@ func runG2Smoke(t *testing.T) g2Report {
 	// Build matched stores: same seed on both sides to make comparisons fair.
 	cliStore := newMemStore()
 	mcpStore := newMemStore()
-	cliSvc := app.NewService(cliStore)
-	mcpSvc := app.NewService(mcpStore)
+	cliSvc := app.NewService(cliStore, nil)
+	mcpSvc := app.NewService(mcpStore, nil)
 
 	results := []opResult{}
 	add := func(r opResult) { results = append(results, r) }

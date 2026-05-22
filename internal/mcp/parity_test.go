@@ -112,7 +112,7 @@ func arrangeWithNote(content string, created time.Time) func(t *testing.T) (*app
 		t.Helper()
 		s := newMemStore()
 		s.Save(content, created)
-		return app.NewService(s), s
+		return app.NewService(s, nil), s
 	}
 }
 
@@ -120,7 +120,7 @@ func arrangeEmpty() func(t *testing.T) (*app.Service, *memStore) {
 	return func(t *testing.T) (*app.Service, *memStore) {
 		t.Helper()
 		s := newMemStore()
-		return app.NewService(s), s
+		return app.NewService(s, nil), s
 	}
 }
 
@@ -203,7 +203,7 @@ func TestCLIvsMCP_GetPayloadParity(t *testing.T) {
 	// CLI
 	cliStore := newMemStore()
 	cliStore.Save("payload-parity", created)
-	cliSvc := app.NewService(cliStore)
+	cliSvc := app.NewService(cliStore, nil)
 	var stdout bytes.Buffer
 	if code := app.RunCLI(cliSvc, []string{"get", "1"}, &stdout, &bytes.Buffer{}); code != 0 {
 		t.Fatalf("cli get failed: code=%d", code)
@@ -213,7 +213,7 @@ func TestCLIvsMCP_GetPayloadParity(t *testing.T) {
 	// MCP
 	mcpStore := newMemStore()
 	mcpStore.Save("payload-parity", created)
-	mcpSvc := app.NewService(mcpStore)
+	mcpSvc := app.NewService(mcpStore, nil)
 	rawArgs, _ := json.Marshal(map[string]interface{}{"id": 1})
 	params, _ := json.Marshal(toolsCallParams{Name: "local_get", Arguments: rawArgs})
 	payload, _ := json.Marshal(request{JSONRPC: "2.0", ID: json.RawMessage(`1`), Method: "tools/call", Params: params})

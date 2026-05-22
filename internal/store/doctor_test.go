@@ -17,7 +17,7 @@ import (
 // integrity ok, and accurate row counts.
 func TestDoctor_HealthyStore(t *testing.T) {
 	src := openTempStoreT(t)
-	svc := app.NewService(src)
+	svc := app.NewService(src, nil)
 	if err := svc.Init(); err != nil {
 		t.Fatalf("init: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestDoctor_HealthyStore(t *testing.T) {
 // counts and stays healthy.
 func TestDoctor_FreshStoreCounts(t *testing.T) {
 	src := openTempStoreT(t)
-	if err := app.NewService(src).Init(); err != nil {
+	if err := app.NewService(src, nil).Init(); err != nil {
 		t.Fatalf("init: %v", err)
 	}
 	report, err := src.Doctor()
@@ -77,7 +77,7 @@ func TestDoctor_FreshStoreCounts(t *testing.T) {
 // reported axis so users see all signals at a glance.
 func TestDoctor_ReportsContainSummaryLine(t *testing.T) {
 	src := openTempStoreT(t)
-	if err := app.NewService(src).Init(); err != nil {
+	if err := app.NewService(src, nil).Init(); err != nil {
 		t.Fatalf("init: %v", err)
 	}
 	report, err := src.Doctor()
@@ -109,7 +109,7 @@ func TestDoctor_CorruptFTS_ReportsDegradedAndRecallStillWorks(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = src.Close() })
 
-	svc := app.NewService(src)
+	svc := app.NewService(src, nil)
 	if err := svc.Init(); err != nil {
 		t.Fatalf("init: %v", err)
 	}

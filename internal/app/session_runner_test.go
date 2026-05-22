@@ -63,7 +63,7 @@ var _ app.SessionStore = (*sessionMemStore)(nil)
 
 func runCLISession(t *testing.T, store *sessionMemStore, args ...string) (int, string, string) {
 	t.Helper()
-	svc := app.NewService(store)
+	svc := app.NewService(store, nil)
 	var stdout, stderr bytes.Buffer
 	code := app.RunCLI(svc, args, &stdout, &stderr)
 	return code, stdout.String(), stderr.String()
